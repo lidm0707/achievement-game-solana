@@ -1,0 +1,35 @@
+# ระบบไฟล์และ metadata
+.anchor
+.DS_Store
+
+# Rust build output
+target/
+**/target/
+Cargo.lock   # ถ้าเป็น library; workspace อาจต้องปรับ
+
+# Backup files
+**/*.rs.bk
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Yarn
+.yarn/
+**/.yarn/
+
+# Test ledger / local test data
+test-ledger/
+**/test-ledger/
+
+# Runbook folder
+runbooks/
+**/runbooks/
+
+# Surfpool folder
+.surfpool/
+**/.surfpool/
+
+# เพิ่มเติม ไฟล์ OS / editor ที่ไม่ต้อง track
+*.swp
+*.swo
