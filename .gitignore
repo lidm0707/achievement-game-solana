@@ -22,9 +22,7 @@ node_modules/
 test-ledger/
 **/test-ledger/
 
-# Runbook folder
-runbooks/
-**/runbooks/
+
 
 # Surfpool folder
 .surfpool/
