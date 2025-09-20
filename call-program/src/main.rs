@@ -51,7 +51,7 @@ fn main() -> Result<()> {
     let server_id: u64 = 123;
     let provider_id: u64 = 456;
     let pub_key = payer.pubkey();
-    let event_id = 789;
+    let event_id: u64 = 789;
 
     // Derive PDA ของ game
     let (game_pda, _bump) = Pubkey::find_program_address(
