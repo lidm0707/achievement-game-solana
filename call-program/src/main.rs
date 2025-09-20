@@ -1,3 +1,4 @@
+use anchor_client::solana_sdk::signer::Signer;
 use anchor_client::solana_sdk::{pubkey::Pubkey, signature::read_keypair_file};
 use anchor_client::{Client, Cluster};
 use anyhow::Result;
@@ -11,6 +12,15 @@ use achieve_game::id;
 use achieve_game::instruction as instruction_module;
 
 fn main() -> Result<()> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs() as i64;
+
+    let deadline: i64 = now + 60; // อีก 1 นาที
+
     // กำหนด URL ของ RPC (local/testnet/devnet)
     let url = Cluster::Custom(
         "http://127.0.0.1:8899".to_string(),
@@ -30,33 +40,50 @@ fn main() -> Result<()> {
     // โหลด keypair ของ payer
     // let payer = read_keypair_file("~/.config/solana/id.json").expect("Failed to read keypair file");
 
-    let client = Client::new(url, Rc::new(payer));
-    let program = client.program(id())?;
+    let client = Client::new(url, Rc::new(&payer));
+
+    // same build api request by token
+    let owner = client.program(id())?;
 
     // กำหนด game_id
     // let game_id: u64 = 42;
     let game_id: u64 = 43;
+    let server_id: u64 = 123;
+    let provider_id: u64 = 456;
+    let pub_key = payer.pubkey();
 
     // Derive PDA ของ game
     let (game_pda, _bump) = Pubkey::find_program_address(
-        &[b"game", program.payer().as_ref(), &game_id.to_le_bytes()],
-        &program.id(),
+        &[
+            b"game",
+            owner.payer().as_ref(),
+            // pub_key.as_ref(),
+            &game_id.to_le_bytes(),
+            &server_id.to_le_bytes(),
+            &provider_id.to_le_bytes(),
+        ],
+        &owner.id(),
     );
 
     // --- เช็คว่ามี account อยู่แล้วหรือไม่ ---
-    let game_account_result = program.account::<Progress>(game_pda);
+    let game_account_result = owner.account::<Progress>(game_pda);
 
     if game_account_result.is_err() {
         println!("Game PDA ไม่พบ, กำลัง initialize...");
 
-        let tx_init = program
+        let tx_init = owner
             .request()
             .accounts(accounts_module::Initialize {
                 game: game_pda,
-                user: program.payer(),
+                owner: owner.payer(),
                 system_program: anchor_lang::solana_program::system_program::id(),
             })
-            .args(instruction_module::Initialize { game_id })
+            .args(instruction_module::Initialize {
+                game_id,
+                server_id,
+                provider_id,
+                deadline,
+            })
             .send()?;
 
         println!("Initialize tx signature: {}", tx_init);
@@ -65,20 +92,27 @@ fn main() -> Result<()> {
     }
 
     // --- เรียก ongoing ---
-    let tx_ongoing = program
+    let tx_ongoing = owner
         .request()
-        .accounts(accounts_module::OnGoing { game: game_pda })
+        .accounts(accounts_module::OnGoing {
+            game: game_pda,
+            owner: pub_key,
+        })
         .args(instruction_module::Ongoing {})
         .send()?;
 
     println!("Ongoing tx signature: {}", tx_ongoing);
 
     // --- Fetch account ล่าสุด ---
-    let game_account: Progress = program.account(game_pda)?;
-    println!(
-        "Game data - game_id: {}, score: {}",
-        game_account.game_id, game_account.score
-    );
+    let game_account: Progress = owner.account(game_pda)?;
+    // println!(
+    //     "Game data - game_id: {}, score: {} , pub_key: {}",
+    //     game_account.game_id, game_account.score, game_account.owner
+    // );
 
+    println!(
+        "Game data - game_id: {}, score: {}, deadline: {}",
+        game_account.game_id, game_account.score, game_account.deadline
+    );
     Ok(())
 }
