@@ -15,6 +15,7 @@ pub mod achieve_game {
         server_id: u64,
         provider_id: u64,
         deadline: i64, // << เพิ่มเข้ามา
+        event_id: u64,
     ) -> Result<()> {
         require_keys_eq!(
             ctx.accounts.owner.key(),
@@ -27,7 +28,7 @@ pub mod achieve_game {
         game.deadline = deadline;
 
         // game.owner = ctx.accounts.owner.key();
-        msg!("initail {} {}", server_id, provider_id);
+        msg!("initail {} {} {}", server_id, provider_id, event_id);
         Ok(())
     }
 
@@ -50,7 +51,7 @@ pub mod achieve_game {
 }
 
 #[derive(Accounts)]
-#[instruction(game_id: u64, server_id: u64, provider_id: u64)]
+#[instruction(game_id: u64, server_id: u64, provider_id: u64 ,event_id: u64)]
 pub struct Initialize<'info> {
     #[account(
         init,
@@ -61,7 +62,8 @@ pub struct Initialize<'info> {
             owner.key().as_ref(),
             &game_id.to_le_bytes().as_ref(),
             &server_id.to_le_bytes().as_ref(),
-            &provider_id.to_le_bytes().as_ref()],
+            &provider_id.to_le_bytes().as_ref(),
+            &event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub game: Account<'info, Progress>,
