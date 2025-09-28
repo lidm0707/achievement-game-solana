@@ -1,0 +1,7 @@
+keypair "authority" {
+  path = "~/.config/solana/id.json"
+}
+
+keypair "payer" {
+  path = "~/.config/solana/id.json"
+}

@@ -1,12 +1,12 @@
 [package]
-name = "achieve-game"
+name = "reward"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "achieve_game"
+name = "reward"
 
 [features]
 default = []
@@ -19,4 +19,4 @@ idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
-reward = { path = "../../../reward/programs/reward" , features = ["cpi"] }
+

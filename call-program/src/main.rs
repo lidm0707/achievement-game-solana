@@ -5,11 +5,17 @@ use anyhow::Result;
 use std::rc::Rc;
 use std::{env, path::PathBuf};
 
-// import crate ของโปรแกรม Anchor
+// --- achieve_game ---
 use achieve_game::Progress;
-use achieve_game::accounts as accounts_module;
+use achieve_game::accounts as game_accounts;
 use achieve_game::id;
-use achieve_game::instruction as instruction_module;
+use achieve_game::instruction as game_ix;
+
+// --- reward ---
+use reward::Reward;
+use reward::accounts as reward_accounts;
+use reward::id as reward_pid;
+use reward::instruction as reward_ix;
 
 fn main() -> Result<()> {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -18,56 +24,81 @@ fn main() -> Result<()> {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs() as i64;
+    let deadline: i64 = now + 60;
 
-    let deadline: i64 = now + 60; // อีก 1 นาที
+    // RPC URL
+    // let url = Cluster::Custom(
+    //     "http://127.0.0.1:8899".to_string(),
+    //     "ws://127.0.0.1:8899".to_string(),
+    // );
+    let url = Cluster::Devnet;
 
-    // กำหนด URL ของ RPC (local/testnet/devnet)
-    let url = Cluster::Custom(
-        "http://127.0.0.1:8899".to_string(),
-        "ws://127.0.0.1:8899".to_string(),
-    );
-    // หา home directory ของผู้ใช้
+    // keypair
     let home = env::var("HOME").expect("Cannot find HOME environment variable");
-
-    // สร้าง path แบบ dynamic
     let keypair_path: PathBuf = [home.as_str(), ".config/solana/id.json"].iter().collect();
+    let payer = read_keypair_file(&keypair_path).expect("Failed to read keypair");
+    let pub_key = payer.pubkey();
 
-    // โหลด keypair
-    let payer = read_keypair_file(&keypair_path).expect(&format!(
-        "Failed to read keypair file at {:?}",
-        keypair_path
-    ));
-    // โหลด keypair ของ payer
-    // let payer = read_keypair_file("~/.config/solana/id.json").expect("Failed to read keypair file");
+    // client
+    let client = Client::new(url, Rc::new(payer));
 
-    let client = Client::new(url, Rc::new(&payer));
-
-    // same build api request by token
+    // program clients
     let owner = client.program(id())?;
-
-    // กำหนด game_id
-    // let game_id: u64 = 42;
+    let reward_prog = client.program(reward_pid())?;
+    println!("owner {:?}", pub_key);
+    // IDs
     let game_id: u64 = 43;
     let server_id: u64 = 123;
     let provider_id: u64 = 456;
-    let pub_key = payer.pubkey();
     let event_id: u64 = 789;
 
-    // Derive PDA ของ game
+    // --- derive reward PDA ---
+    let (reward_pda, _bump) = Pubkey::find_program_address(
+        &[b"reward", pub_key.as_ref(), &event_id.to_le_bytes()],
+        &reward_prog.id(),
+    );
+
+    // --- check reward account ---
+    let reward_account_result = reward_prog.account::<Reward>(reward_pda);
+
+    if reward_account_result.is_err() {
+        println!("Reward PDA ไม่พบ, กำลัง initialize...");
+
+        let tx_reward = reward_prog
+            .request()
+            .accounts(reward_accounts::Initialize {
+                authority: pub_key,
+                reward: reward_pda,
+                system_program: anchor_lang::solana_program::system_program::id(),
+            })
+            .args(reward_ix::Initialize {
+                event_id,
+                amount: 100,
+            })
+            .send()?;
+
+        println!("InitializeReward tx signature: {}", tx_reward);
+    } else {
+        println!("Reward PDA มีอยู่แล้ว");
+    }
+
+    // --- derive game PDA ---
     let (game_pda, _bump) = Pubkey::find_program_address(
         &[
             b"game",
-            owner.payer().as_ref(),
-            // pub_key.as_ref(),
+            pub_key.as_ref(), // 👈 ต้อง match owner ที่ส่งเข้า ctx
+            // owner.payer().as_ref(),
+            // pub_key.as_ref(), // 👈 ใช้ payer pubkey
             &game_id.to_le_bytes(),
             &server_id.to_le_bytes(),
             &provider_id.to_le_bytes(),
             &event_id.to_le_bytes(),
         ],
-        &owner.id(),
+        &pub_key,
     );
+    println!("Derived game PDA = {}", game_pda);
 
-    // --- เช็คว่ามี account อยู่แล้วหรือไม่ ---
+    // --- check game account ---
     let game_account_result = owner.account::<Progress>(game_pda);
 
     if game_account_result.is_err() {
@@ -75,12 +106,14 @@ fn main() -> Result<()> {
 
         let tx_init = owner
             .request()
-            .accounts(accounts_module::Initialize {
+            .accounts(game_accounts::Initialize {
                 game: game_pda,
-                owner: owner.payer(),
+                // owner: owner.payer(),
+                owner: pub_key, // 👈 consistent กับ seeds
+
                 system_program: anchor_lang::solana_program::system_program::id(),
             })
-            .args(instruction_module::Initialize {
+            .args(game_ix::Initialize {
                 game_id,
                 server_id,
                 provider_id,
@@ -89,33 +122,31 @@ fn main() -> Result<()> {
             })
             .send()?;
 
-        println!("Initialize tx signature: {}", tx_init);
+        println!("InitializeGame tx signature: {}", tx_init);
     } else {
         println!("Game PDA มีอยู่แล้ว");
     }
 
-    // --- เรียก ongoing ---
+    // --- ongoing ---
     let tx_ongoing = owner
         .request()
-        .accounts(accounts_module::OnGoing {
+        .accounts(game_accounts::OnGoing {
             game: game_pda,
             owner: pub_key,
+            reward: reward_pda,               // ✅ เพิ่ม
+            reward_program: reward_prog.id(), // ✅ เพิ่ม
         })
-        .args(instruction_module::Ongoing {})
+        .args(game_ix::Ongoing { event_id }) // ✅ ไม่ใช่ Ongoing {}
         .send()?;
 
     println!("Ongoing tx signature: {}", tx_ongoing);
 
-    // --- Fetch account ล่าสุด ---
+    // --- fetch latest account ---
     let game_account: Progress = owner.account(game_pda)?;
-    // println!(
-    //     "Game data - game_id: {}, score: {} , pub_key: {}",
-    //     game_account.game_id, game_account.score, game_account.owner
-    // );
-
     println!(
         "Game data - game_id: {}, score: {}, deadline: {}",
         game_account.game_id, game_account.score, game_account.deadline
     );
+
     Ok(())
 }

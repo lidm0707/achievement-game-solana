@@ -17,6 +17,7 @@ name = "achieve-game"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "reward",
 ]
 
 [[package]]
@@ -805,6 +806,7 @@ dependencies = [
  "anchor-client",
  "anchor-lang",
  "anyhow",
+ "reward",
 ]
 
 [[package]]
@@ -2966,6 +2968,13 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tower-service",
+]
+
+[[package]]
+name = "reward"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
 ]
 
 [[package]]

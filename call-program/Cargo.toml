@@ -7,4 +7,6 @@ edition = "2024"
 anchor-client = "0.31.1"
 anyhow = "1.0"
 "achieve-game" = { path = "../achieve-game/programs/achieve-game" }
+"reward" = { path = "../reward/programs/reward" }
+
 anchor-lang = "0.31.1"
