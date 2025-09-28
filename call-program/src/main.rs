@@ -43,14 +43,14 @@ fn main() -> Result<()> {
     let client = Client::new(url, Rc::new(payer));
 
     // program clients
-    let owner = client.program(id())?;
+    let ach_prog = client.program(id())?;
     let reward_prog = client.program(reward_pid())?;
-    println!("owner {:?}", pub_key);
+    println!("admin {:?}", pub_key);
     // IDs
     let game_id: u64 = 43;
     let server_id: u64 = 123;
     let provider_id: u64 = 456;
-    let event_id: u64 = 789;
+    let event_id: u64 = 123;
 
     // --- derive reward PDA ---
     let (reward_pda, _bump) = Pubkey::find_program_address(
@@ -86,30 +86,31 @@ fn main() -> Result<()> {
     let (game_pda, _bump) = Pubkey::find_program_address(
         &[
             b"game",
-            pub_key.as_ref(), // 👈 ต้อง match owner ที่ส่งเข้า ctx
-            // owner.payer().as_ref(),
-            // pub_key.as_ref(), // 👈 ใช้ payer pubkey
+            pub_key.as_ref(), // 👈 ต้อง match admin ที่ส่งเข้า ctx
             &game_id.to_le_bytes(),
             &server_id.to_le_bytes(),
             &provider_id.to_le_bytes(),
             &event_id.to_le_bytes(),
         ],
-        &pub_key,
+        // &admin.id(),
+        &ach_prog.id(),
     );
     println!("Derived game PDA = {}", game_pda);
+    println!("Derived game PDA = {:?}", pub_key.as_ref());
+    println!("Derived game PDA = {}", id());
 
     // --- check game account ---
-    let game_account_result = owner.account::<Progress>(game_pda);
+    let game_account_result = ach_prog.account::<Progress>(game_pda);
 
     if game_account_result.is_err() {
         println!("Game PDA ไม่พบ, กำลัง initialize...");
 
-        let tx_init = owner
+        let tx_init = ach_prog
             .request()
             .accounts(game_accounts::Initialize {
                 game: game_pda,
-                // owner: owner.payer(),
-                owner: pub_key, // 👈 consistent กับ seeds
+                // admin: admin.payer(),
+                admin: pub_key, // 👈 consistent กับ seeds
 
                 system_program: anchor_lang::solana_program::system_program::id(),
             })
@@ -128,11 +129,11 @@ fn main() -> Result<()> {
     }
 
     // --- ongoing ---
-    let tx_ongoing = owner
+    let tx_ongoing = ach_prog
         .request()
         .accounts(game_accounts::OnGoing {
             game: game_pda,
-            owner: pub_key,
+            admin: pub_key,
             reward: reward_pda,               // ✅ เพิ่ม
             reward_program: reward_prog.id(), // ✅ เพิ่ม
         })
@@ -142,7 +143,7 @@ fn main() -> Result<()> {
     println!("Ongoing tx signature: {}", tx_ongoing);
 
     // --- fetch latest account ---
-    let game_account: Progress = owner.account(game_pda)?;
+    let game_account: Progress = ach_prog.account(game_pda)?;
     println!(
         "Game data - game_id: {}, score: {}, deadline: {}",
         game_account.game_id, game_account.score, game_account.deadline

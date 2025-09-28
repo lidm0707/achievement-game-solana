@@ -6,7 +6,8 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-achieve_game = "6KK6RHywHB93cTosJSrtBS34eJmsnaZdC4DPQjk4g5HC"
+# achieve_game = "6KK6RHywHB93cTosJSrtBS34eJmsnaZdC4DPQjk4g5HC"
+achieve_game = "EMuQqLFUEEJouvbMsGuUfkWhT5XxvNCYw1KpwQWc1vUK"
 
 [registry]
 url = "https://api.apr.dev"
