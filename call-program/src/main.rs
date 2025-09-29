@@ -12,10 +12,10 @@ use achieve_game::id;
 use achieve_game::instruction as game_ix;
 
 // --- reward ---
-use reward::Reward;
-use reward::accounts as reward_accounts;
-use reward::id as reward_pid;
-use reward::instruction as reward_ix;
+use reward_achie::Reward;
+use reward_achie::accounts as reward_accounts;
+use reward_achie::id as reward_pid;
+use reward_achie::instruction as reward_ix;
 
 fn main() -> Result<()> {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -27,11 +27,11 @@ fn main() -> Result<()> {
     let deadline: i64 = now + 60;
 
     // RPC URL
-    // let url = Cluster::Custom(
-    //     "http://127.0.0.1:8899".to_string(),
-    //     "ws://127.0.0.1:8899".to_string(),
-    // );
-    let url = Cluster::Devnet;
+    let url = Cluster::Custom(
+        "http://127.0.0.1:8899".to_string(),
+        "ws://127.0.0.1:8899".to_string(),
+    );
+    // let url = Cluster::Devnet;
 
     // keypair
     let home = env::var("HOME").expect("Cannot find HOME environment variable");

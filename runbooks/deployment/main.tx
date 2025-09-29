@@ -1,7 +1,0 @@
-runbook "deployment" {
-  steps = [
-    { runbook = "achieve-game/runbooks.yml:deployment" },
-    { runbook = "reward/runbooks.yml:deployment" }
-  ]
-}
-import "runbooks/signers.localnet.tx"

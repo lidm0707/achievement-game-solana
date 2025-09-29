@@ -1,6 +1,0 @@
-runbook "deployment" {
-steps = [
-{ action = "deploy", program = "achieve_game", so = "achieve-game/target/deploy/achieve_game.so" },
-{ action = "deploy", program = "reward", so = "reward/target/deploy/reward.so" }
-]
-}

@@ -13,11 +13,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "achieve-game"
+name = "achieve_game"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "reward",
+ "reward_achie",
 ]
 
 [[package]]
@@ -802,11 +802,11 @@ dependencies = [
 name = "call-program"
 version = "0.1.0"
 dependencies = [
- "achieve-game",
+ "achieve_game",
  "anchor-client",
  "anchor-lang",
  "anyhow",
- "reward",
+ "reward_achie",
 ]
 
 [[package]]
@@ -2971,7 +2971,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "reward"
+name = "reward_achie"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

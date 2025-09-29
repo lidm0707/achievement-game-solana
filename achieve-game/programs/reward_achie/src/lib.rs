@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 
-declare_id!("22gpiE17bYgxgbyYW9DMF3BZwQDYggbM4Qa7kNzfjgJH");
+declare_id!("HcxxUuqPxgzFmfe79v9mCxY72TVeGMCvRydMv7R8dkCG");
 
 #[program]
-pub mod reward {
+pub mod reward_achie {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>, event_id: u64, amount: u64) -> Result<()> {

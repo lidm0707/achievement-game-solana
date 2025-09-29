@@ -17,3 +17,14 @@ action "deploy_achieve_game" "svm::deploy_program" {
     // This will make deployments instantaneous, but is deviating from how the deployments will take place on devnet/mainnet.
     // instant_surfnet_deployment = true
 }
+
+action "deploy_reward_achie" "svm::deploy_program" {
+    description = "Deploy reward_achie program"
+    program = svm::get_program_from_anchor_project("reward_achie") 
+    authority = signer.authority
+    payer = signer.payer
+    // Optional: if you want to deploy the program via a cheatcode when targeting a Surfnet, set `instant_surfnet_deployment = true`
+    // Deploying via a cheatcode will write the program data directly to the program account, rather than sending transactions.
+    // This will make deployments instantaneous, but is deviating from how the deployments will take place on devnet/mainnet.
+    // instant_surfnet_deployment = true
+}

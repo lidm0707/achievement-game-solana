@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 anchor-client = "0.31.1"
 anyhow = "1.0"
-"achieve-game" = { path = "../achieve-game/programs/achieve-game" }
-"reward" = { path = "../reward/programs/reward" }
+achieve_game = { path = "../achieve-game/programs/achieve-game" }
+reward_achie = { path = "../achieve-game/programs/reward_achie" }
 
 anchor-lang = "0.31.1"

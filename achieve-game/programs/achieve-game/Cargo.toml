@@ -1,5 +1,5 @@
 [package]
-name = "achieve-game"
+name = "achieve_game"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
@@ -19,4 +19,4 @@ idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
-reward = { path = "../../../reward/programs/reward" , features = ["cpi"] }
+reward_achie = { path = "../reward_achie", features = ["cpi"] }

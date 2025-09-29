@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("EMuQqLFUEEJouvbMsGuUfkWhT5XxvNCYw1KpwQWc1vUK");
+declare_id!("7uXYiv4Sm979vBWFBe9MzgiyFDX3Z7DwPL5dXEqcYpLx");
 
 #[program]
 pub mod achieve_game {
@@ -64,12 +64,12 @@ pub mod achieve_game {
             );
 
             let cpi_program = ctx.accounts.reward_program.to_account_info();
-            let cpi_accounts = reward::cpi::accounts::UpdateReward {
+            let cpi_accounts = reward_achie::cpi::accounts::UpdateReward {
                 authority: ctx.accounts.admin.to_account_info(),
                 reward: ctx.accounts.reward.to_account_info(),
             };
             let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-            reward::cpi::update_reward(cpi_ctx)?;
+            reward_achie::cpi::update_reward(cpi_ctx)?;
         }
 
         Ok(())
@@ -107,8 +107,8 @@ pub struct OnGoing<'info> {
     pub admin: Signer<'info>,
 
     #[account(mut)]
-    pub reward: Account<'info, reward::Reward>,
-    pub reward_program: Program<'info, reward::program::Reward>,
+    pub reward: Account<'info, reward_achie::Reward>,
+    pub reward_program: Program<'info, reward_achie::program::RewardAchie>,
 }
 
 #[account]
