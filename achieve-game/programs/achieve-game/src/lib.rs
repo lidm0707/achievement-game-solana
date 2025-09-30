@@ -93,7 +93,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + 8 + 8 + 8 +1,
+        space = 8 + 8 + 8 + 8 +1 +1,
         seeds = [
             b"game",
             admin.key().as_ref(),
@@ -128,6 +128,7 @@ pub struct Progress {
     pub score: u64,
     pub deadline: i64,
     pub clear_event: bool,
+    pub minted: bool,
 }
 
 #[error_code]
