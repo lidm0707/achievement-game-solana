@@ -13,9 +13,9 @@ pub mod reward_achie {
         Ok(())
     }
 
-    pub fn update_reward(ctx: Context<UpdateReward>) -> Result<()> {
+    pub fn update_reward(ctx: Context<UpdateReward>, event_id: u64) -> Result<()> {
         let reward = &mut ctx.accounts.reward;
-        require!(reward.amount < 1, ErrorCode::EmptyReward);
+        require!(reward.amount > 0, ErrorCode::EmptyReward);
         reward.amount -= 1;
         Ok(())
     }
@@ -40,7 +40,7 @@ pub struct UpdateReward<'info> {
 
     #[account(
         mut, // ✅ ใช้ mut แทน init
-        seeds = [b"reward", authority.key().as_ref(), &event_id.to_le_bytes()],
+        seeds = [b"reward", authority.key().as_ref(), &event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub reward: Account<'info, Reward>,
