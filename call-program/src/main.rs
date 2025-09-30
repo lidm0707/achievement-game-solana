@@ -24,7 +24,7 @@ fn main() -> Result<()> {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs() as i64;
-    let deadline: i64 = now + 60;
+    let deadline: i64 = now + 60000;
 
     // RPC URL
     let url = Cluster::Custom(
@@ -137,17 +137,39 @@ fn main() -> Result<()> {
             reward: reward_pda,               // ✅ เพิ่ม
             reward_program: reward_prog.id(), // ✅ เพิ่ม
         })
-        .args(game_ix::Ongoing { event_id }) // ✅ ไม่ใช่ Ongoing {}
-        .send()?;
+        .args(game_ix::Ongoing { event_id }); // ✅ ไม่ใช่ Ongoing {}
 
-    println!("Ongoing tx signature: {}", tx_ongoing);
+    // --- loop check reward 10 times ---
+    for i in 0..10 {
+        // println!("Checking reward loop {}/10 ...", i + 1);
 
-    // --- fetch latest account ---
+        // let reward_account: Reward = reward_prog.account(reward_pda)?;
+        // println!(
+        //     "Reward account - event_id: {}, amount: {}",
+        //     reward_account.id, reward_account.amount
+        // );
+
+        // std::thread::sleep(std::time::Duration::from_secs(1)); // เว้นช่วงนิดนึง
+        let send = tx_ongoing.send()?;
+        println!(" - {} Ongoing tx signature: {}", (i + 1).to_string(), send);
+    }
+
+    // --- fetch latest game account ---
     let game_account: Progress = ach_prog.account(game_pda)?;
     println!(
         "Game data - game_id: {}, score: {}, deadline: {}",
         game_account.game_id, game_account.score, game_account.deadline
     );
+
+    // --- call Late (after deadline) ---
+    // println!("Calling Late instruction (after deadline) ...");
+    // let now = SystemTime::now()
+    //     .duration_since(UNIX_EPOCH)
+    //     .unwrap()
+    //     .as_secs() as i64;
+
+    // // ✅ ตั้ง deadline ให้เป็นอดีต
+    // let deadline: i64 = now - 1;
 
     Ok(())
 }
