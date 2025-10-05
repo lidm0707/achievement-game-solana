@@ -26,12 +26,11 @@ fn main() -> Result<()> {
         .as_secs() as i64;
     let deadline: i64 = now + 60000;
 
-    // RPC URL
+    // RPC URL (local validator)
     let url = Cluster::Custom(
         "http://127.0.0.1:8899".to_string(),
         "ws://127.0.0.1:8899".to_string(),
     );
-    // let url = Cluster::Devnet;
 
     // keypair
     let home = env::var("HOME").expect("Cannot find HOME environment variable");
@@ -46,11 +45,13 @@ fn main() -> Result<()> {
     let ach_prog = client.program(id())?;
     let reward_prog = client.program(reward_pid())?;
     println!("admin {:?}", pub_key);
+
     // IDs
     let game_id: u64 = 43;
     let server_id: u64 = 123;
     let provider_id: u64 = 456;
     let event_id: u64 = 123;
+    let max_score: u64 = 2;
 
     // --- derive reward PDA ---
     let (reward_pda, _bump) = Pubkey::find_program_address(
@@ -86,18 +87,15 @@ fn main() -> Result<()> {
     let (game_pda, _bump) = Pubkey::find_program_address(
         &[
             b"game",
-            pub_key.as_ref(), // 👈 ต้อง match admin ที่ส่งเข้า ctx
+            pub_key.as_ref(),
             &game_id.to_le_bytes(),
             &server_id.to_le_bytes(),
             &provider_id.to_le_bytes(),
             &event_id.to_le_bytes(),
         ],
-        // &admin.id(),
         &ach_prog.id(),
     );
     println!("Derived game PDA = {}", game_pda);
-    println!("Derived game PDA = {:?}", pub_key.as_ref());
-    println!("Derived game PDA = {}", id());
 
     // --- check game account ---
     let game_account_result = ach_prog.account::<Progress>(game_pda);
@@ -109,9 +107,7 @@ fn main() -> Result<()> {
             .request()
             .accounts(game_accounts::Initialize {
                 game: game_pda,
-                // admin: admin.payer(),
-                admin: pub_key, // 👈 consistent กับ seeds
-
+                admin: pub_key,
                 system_program: anchor_lang::solana_program::system_program::id(),
             })
             .args(game_ix::Initialize {
@@ -120,6 +116,7 @@ fn main() -> Result<()> {
                 provider_id,
                 deadline,
                 event_id,
+                max_score,
             })
             .send()?;
 
@@ -128,48 +125,56 @@ fn main() -> Result<()> {
         println!("Game PDA มีอยู่แล้ว");
     }
 
-    // --- ongoing ---
-    let tx_ongoing = ach_prog
-        .request()
-        .accounts(game_accounts::OnGoing {
-            game: game_pda,
-            admin: pub_key,
-            reward: reward_pda,               // ✅ เพิ่ม
-            reward_program: reward_prog.id(), // ✅ เพิ่ม
-        })
-        .args(game_ix::Ongoing { event_id }); // ✅ ไม่ใช่ Ongoing {}
+    // --- loop ongoing ---
+    for i in 0..3 {
+        let tx = ach_prog
+            .request()
+            .accounts(game_accounts::OnGoing {
+                game: game_pda,
+                admin: pub_key,
+                reward: reward_pda,
+                reward_program: reward_prog.id(),
+            })
+            .args(game_ix::Ongoing { event_id })
+            .send()?;
 
-    // --- loop check reward 10 times ---
-    for i in 0..10 {
-        // println!("Checking reward loop {}/10 ...", i + 1);
-
-        // let reward_account: Reward = reward_prog.account(reward_pda)?;
-        // println!(
-        //     "Reward account - event_id: {}, amount: {}",
-        //     reward_account.id, reward_account.amount
-        // );
-
-        // std::thread::sleep(std::time::Duration::from_secs(1)); // เว้นช่วงนิดนึง
-        let send = tx_ongoing.send()?;
-        println!(" - {} Ongoing tx signature: {}", (i + 1).to_string(), send);
+        println!(" - Loop {}/3 Ongoing tx signature: {}", (i + 1), tx);
     }
 
-    // --- fetch latest game account ---
+    // --- fetch game account ---
     let game_account: Progress = ach_prog.account(game_pda)?;
     println!(
-        "Game data - game_id: {}, score: {}, deadline: {}",
-        game_account.game_id, game_account.score, game_account.deadline
+        "Game data - game_id: {}, score: {}, deadline: {}, max_score: {}",
+        game_account.game_id, game_account.score, game_account.deadline, game_account.max_score
     );
 
-    // --- call Late (after deadline) ---
-    // println!("Calling Late instruction (after deadline) ...");
-    // let now = SystemTime::now()
-    //     .duration_since(UNIX_EPOCH)
-    //     .unwrap()
-    //     .as_secs() as i64;
+    // --- fetch reward before update ---
+    let reward_account: Reward = reward_prog.account(reward_pda)?;
+    println!(
+        "Reward data - event_id: {}, amount: {}",
+        reward_account.id, reward_account.amount
+    );
 
-    // // ✅ ตั้ง deadline ให้เป็นอดีต
-    // let deadline: i64 = now - 1;
+    // --- manual update reward (direct call) ---
+    println!("\n--- Manual Update Reward ---");
+
+    let tx_update = reward_prog
+        .request()
+        .accounts(reward_accounts::UpdateReward {
+            authority: pub_key,
+            reward: reward_pda,
+        })
+        .args(reward_ix::UpdateReward { event_id })
+        .send()?;
+
+    println!("UpdateReward tx signature: {}", tx_update);
+
+    // --- fetch reward after update ---
+    let reward_after_update: Reward = reward_prog.account(reward_pda)?;
+    println!(
+        "Reward (after manual update) - event_id: {}, amount: {}",
+        reward_after_update.id, reward_after_update.amount
+    );
 
     Ok(())
 }

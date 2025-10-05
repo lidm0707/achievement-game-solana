@@ -16,6 +16,7 @@ pub mod achieve_game {
         provider_id: u64,
         deadline: i64,
         event_id: u64,
+        max_score: u64,
     ) -> Result<()> {
         require_keys_eq!(
             ctx.accounts.admin.key(),
@@ -26,6 +27,7 @@ pub mod achieve_game {
         let game = &mut ctx.accounts.game;
         game.game_id = game_id;
         game.score = 0;
+        game.max_score = max_score;
         game.deadline = deadline;
 
         Ok(())
@@ -47,42 +49,82 @@ pub mod achieve_game {
         let game = &mut ctx.accounts.game;
         game.score += 1;
 
-        if game.score == 10 {
-            // ✅ derive reward PDA ตาม seed ฝั่ง reward program
-            let (reward_pda, _bump) = Pubkey::find_program_address(
-                &[
-                    b"reward",
-                    ctx.accounts.admin.key().as_ref(),
-                    &event_id.to_le_bytes(),
-                ],
-                &ctx.accounts.reward_program.key(),
-            );
+        // if game.score == 10 {
+        //     // ✅ derive reward PDA ตาม seed ฝั่ง reward program
+        //     let (reward_pda, _bump) = Pubkey::find_program_address(
+        //         &[
+        //             b"reward",
+        //             ctx.accounts.admin.key().as_ref(),
+        //             &event_id.to_le_bytes(),
+        //         ],
+        //         &ctx.accounts.reward_program.key(),
+        //     );
 
-            // ✅ เช็คว่า PDA ที่ derive ได้ ต้องตรงกับ account ที่ส่งมา
-            require_keys_eq!(
-                reward_pda,
-                ctx.accounts.reward.key(),
-                ErrorCode::InvalidRewardAccount
-            );
+        //     // ✅ เช็คว่า PDA ที่ derive ได้ ต้องตรงกับ account ที่ส่งมา
+        //     require_keys_eq!(
+        //         reward_pda,
+        //         ctx.accounts.reward.key(),
+        //         ErrorCode::InvalidRewardAccount
+        //     );
 
-            // ✅ เตรียม CPI
-            let cpi_program = ctx.accounts.reward_program.to_account_info();
-            let cpi_accounts = reward_achie::cpi::accounts::UpdateReward {
-                authority: ctx.accounts.admin.to_account_info(),
-                reward: ctx.accounts.reward.to_account_info(),
-            };
+        //     // ✅ เตรียม CPI
+        //     let cpi_program = ctx.accounts.reward_program.to_account_info();
+        //     let cpi_accounts = reward_achie::cpi::accounts::UpdateReward {
+        //         authority: ctx.accounts.admin.to_account_info(),
+        //         reward: ctx.accounts.reward.to_account_info(),
+        //     };
 
-            // ✅ ใส่ seeds ของ admin (ถ้า reward program ใช้ check authority)
-            // let seeds = &[b"game", ctx.accounts.admin.key.as_ref()];
-            // let signer_seeds = &[&seeds[..]]; // optional ถ้า reward_achie ต้องการ signer PDA
+        //     // ✅ ใส่ seeds ของ admin (ถ้า reward program ใช้ check authority)
+        //     // let seeds = &[b"game", ctx.accounts.admin.key.as_ref()];
+        //     // let signer_seeds = &[&seeds[..]]; // optional ถ้า reward_achie ต้องการ signer PDA
 
-            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-            reward_achie::cpi::update_reward(cpi_ctx, event_id)?;
+        //     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        //     reward_achie::cpi::update_reward(cpi_ctx, event_id)?;
 
-            // ✅ mark clear event
-            game.clear_event = true;
-        }
+        //     // ✅ mark clear event
+        //     game.clear_event = true;
+        // }
 
+        Ok(())
+    }
+    pub fn claim_reward(ctx: Context<ClaimReward>, event_id: u64) -> Result<()> {
+        // ✅ derive reward PDA ตาม seed ฝั่ง reward program
+        //
+        require!(
+            ctx.accounts.game.score >= ctx.accounts.game.max_score,
+            ErrorCode::ScoreNotEnough
+        );
+        let (reward_pda, _bump) = Pubkey::find_program_address(
+            &[
+                b"reward",
+                ctx.accounts.admin.key().as_ref(),
+                &event_id.to_le_bytes(),
+            ],
+            &ctx.accounts.reward_program.key(),
+        );
+
+        // ✅ เช็คว่า PDA ที่ derive ได้ ต้องตรงกับ account ที่ส่งมา
+        require_keys_eq!(
+            reward_pda,
+            ctx.accounts.reward.key(),
+            ErrorCode::InvalidRewardAccount
+        );
+
+        // ✅ เตรียม CPI
+        let cpi_program = ctx.accounts.reward_program.to_account_info();
+        let cpi_accounts = reward_achie::cpi::accounts::UpdateReward {
+            authority: ctx.accounts.admin.to_account_info(),
+            reward: ctx.accounts.reward.to_account_info(),
+        };
+
+        // ✅ ใส่ seeds ของ admin (ถ้า reward program ใช้ check authority)
+        // let seeds = &[b"game", ctx.accounts.admin.key.as_ref()];
+        // let signer_seeds = &[&seeds[..]]; // optional ถ้า reward_achie ต้องการ signer PDA
+
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        reward_achie::cpi::update_reward(cpi_ctx, event_id)?;
+
+        // ✅ mark clear event
         Ok(())
     }
 }
@@ -93,7 +135,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + 8 + 8 + 8 +1 +1,
+        space = 8 + 8 + 8 + 8 +8,
         seeds = [
             b"game",
             admin.key().as_ref(),
@@ -121,14 +163,23 @@ pub struct OnGoing<'info> {
     pub reward: Account<'info, reward_achie::Reward>,
     pub reward_program: Program<'info, reward_achie::program::RewardAchie>,
 }
+#[derive(Accounts)]
+pub struct ClaimReward<'info> {
+    #[account(mut)]
+    pub game: Account<'info, Progress>,
+    pub admin: Signer<'info>,
+
+    #[account(mut)]
+    pub reward: Account<'info, reward_achie::Reward>,
+    pub reward_program: Program<'info, reward_achie::program::RewardAchie>,
+}
 
 #[account]
 pub struct Progress {
     pub game_id: u64,
     pub score: u64,
     pub deadline: i64,
-    pub clear_event: bool,
-    pub minted: bool,
+    pub max_score: u64,
 }
 
 #[error_code]
@@ -141,4 +192,6 @@ pub enum ErrorCode {
     EmptyReward,
     #[msg("Invalid reward account")]
     InvalidRewardAccount,
+    #[msg("Score is not enough")]
+    ScoreNotEnough,
 }
