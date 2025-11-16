@@ -7,9 +7,9 @@ addon "svm" {
     network_id = input.network_id
 }
 
-action "deploy_achieve_game" "svm::deploy_program" {
-    description = "Deploy achieve_game program"
-    program = svm::get_program_from_anchor_project("achieve_game") 
+action "deploy_quest" "svm::deploy_program" {
+    description = "Deploy quest program"
+    program = svm::get_program_from_anchor_project("quest") 
     authority = signer.authority
     payer = signer.payer
     // Optional: if you want to deploy the program via a cheatcode when targeting a Surfnet, set `instant_surfnet_deployment = true`
@@ -18,9 +18,9 @@ action "deploy_achieve_game" "svm::deploy_program" {
     // instant_surfnet_deployment = true
 }
 
-action "deploy_reward_achie" "svm::deploy_program" {
-    description = "Deploy reward_achie program"
-    program = svm::get_program_from_anchor_project("reward_achie") 
+action "deploy_reward" "svm::deploy_program" {
+    description = "Deploy reward program"
+    program = svm::get_program_from_anchor_project("reward") 
     authority = signer.authority
     payer = signer.payer
     // Optional: if you want to deploy the program via a cheatcode when targeting a Surfnet, set `instant_surfnet_deployment = true`

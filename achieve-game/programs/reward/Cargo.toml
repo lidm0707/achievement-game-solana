@@ -1,12 +1,12 @@
 [package]
-name = "reward_achie"
+name = "reward"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "reward_achie"
+name = "reward"
 
 [features]
 default = []
@@ -18,4 +18,5 @@ idl-build = ["anchor-lang/idl-build"]
 
 
 [dependencies]
-anchor-lang = "0.31.1"
+anchor-lang = "0.32.1"
+quest = { path = "../quest", features = ["cpi"] }

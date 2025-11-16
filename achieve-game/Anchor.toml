@@ -6,11 +6,11 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-achieve_game = "EMuQqLFUEEJouvbMsGuUfkWhT5XxvNCYw1KpwQWc1vUK"
-reward_achie = "Ft938dnF35nS6mHvYeP3is3yPV3PLUNB5jyveAWT1HTi"
+quest = "FP3ZzVzsZopXXRTiivLqjpDSGVSuytJ5Xy4c4i4P9G7T"
+reward = "GwRMN4fNsF8MDPr5qtNH8FUbxoYXduYVrVZMCKghAuoT"
 [programs.localnet]
-achieve_game = "EMuQqLFUEEJouvbMsGuUfkWhT5XxvNCYw1KpwQWc1vUK"
-reward_achie = "Ft938dnF35nS6mHvYeP3is3yPV3PLUNB5jyveAWT1HTi"
+quest = "FP3ZzVzsZopXXRTiivLqjpDSGVSuytJ5Xy4c4i4P9G7T"
+reward = "GwRMN4fNsF8MDPr5qtNH8FUbxoYXduYVrVZMCKghAuoT"
 
 [registry]
 url = "https://api.apr.dev"
