@@ -11,7 +11,6 @@ declare_id!("GwRMN4fNsF8MDPr5qtNH8FUbxoYXduYVrVZMCKghAuoT");
 
 #[program]
 pub mod reward {
-    use quest::state::quest_info::QuestInfo;
 
     use super::*;
 
