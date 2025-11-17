@@ -56,8 +56,7 @@ pub mod quest {
             ErrorCustome::DeadlinePassed
         );
 
-        let quest = &mut ctx.accounts.quest_score;
-        quest.score += 1;
+        ctx.accounts.quest_score.update_score()?;
         Ok(())
     }
 }
