@@ -15,7 +15,10 @@ pub mod reward {
     use super::*;
 
     pub fn create_reward(ctx: Context<CreateReward>, quest_id: u64, amount: u64) -> Result<()> {
-        ctx.accounts.reward.create_reward(quest_id, amount)?;
+        ctx.accounts
+            .reward
+            .load_init()?
+            .create_reward(quest_id, amount)?;
         Ok(())
     }
 
@@ -27,7 +30,7 @@ pub mod reward {
         provider_id: u64,
     ) -> Result<()> {
         let reward = &mut ctx.accounts.reward;
-        require!(reward.amount > 0, ErrorCustome::EmptyReward);
+        require!(reward.load()?.amount > 0, ErrorCustome::EmptyReward);
 
         // ---------------------------
         // Read Quest PDA State
@@ -48,11 +51,11 @@ pub mod reward {
         // Validate quest >= max_score
         // ---------------------------
         require!(
-            quest_data.score >= quest_data.max_score,
+            quest_data.load()?.score >= quest_data.load()?.max_score,
             ErrorCustome::QuestNotCompleted
         );
 
-        reward.claim_reward()?;
+        reward.load_mut()?.claim_reward()?;
         Ok(())
     }
 }

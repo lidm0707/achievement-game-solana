@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 
-#[account]
+#[account(zero_copy)]
 #[derive(InitSpace)]
+
 pub struct QuestInfo {
     pub quest_id: u64,
     pub user_id: u64,

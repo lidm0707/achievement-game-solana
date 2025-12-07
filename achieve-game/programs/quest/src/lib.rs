@@ -24,7 +24,7 @@ pub mod quest {
         max_score: u64,
     ) -> Result<()> {
         let score = 0;
-        ctx.accounts.quest_score.create_quest(
+        ctx.accounts.quest_score.load_init()?.create_quest(
             quest_id,
             user_id,
             server_id,
@@ -52,11 +52,11 @@ pub mod quest {
 
         let clock = Clock::get()?;
         require!(
-            clock.unix_timestamp <= ctx.accounts.quest_score.deadline,
+            clock.unix_timestamp <= ctx.accounts.quest_score.load()?.deadline,
             ErrorCustome::DeadlinePassed
         );
 
-        ctx.accounts.quest_score.update_score()?;
+        ctx.accounts.quest_score.load_mut()?.update_score()?;
         Ok(())
     }
 }

@@ -12,7 +12,7 @@ pub struct ClaimReward<'info> {
             b"reward",
             quest_id.to_le_bytes().as_ref()],
         bump)]
-    pub reward: Account<'info, Reward>,
+    pub reward: AccountLoader<'info, Reward>,
 
     #[account(mut)]
     pub server_admin: Signer<'info>,
@@ -22,7 +22,7 @@ pub struct ClaimReward<'info> {
     #[account(
         owner = quest_program.key()
     )]
-    pub quest_pda: Account<'info, QuestInfo>,
+    pub quest_pda: AccountLoader<'info, QuestInfo>,
 
     /// CHECK: Quest program ID (NOT a PDA)
     pub quest_program: Program<'info, Quest>,

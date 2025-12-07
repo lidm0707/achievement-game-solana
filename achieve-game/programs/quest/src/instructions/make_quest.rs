@@ -15,7 +15,7 @@ pub struct MakeQuest<'info> {
         ],
         bump
     )]
-    pub quest_score: Account<'info, QuestInfo>,
+    pub quest_score: AccountLoader<'info, QuestInfo>,
 
     #[account(mut)]
     pub server_admin: Signer<'info>,
